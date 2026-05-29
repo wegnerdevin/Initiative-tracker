@@ -71,7 +71,7 @@
     flex-direction: column;
   }
   .screen.active { display: flex; }
-
+ 
   /* ---------- Initiative tracker ---------- */
   .init-header {
     display: flex;
@@ -113,7 +113,7 @@
     color: var(--bad);
     border-color: var(--bad);
   }
-
+ 
   .init-list {
     flex: 1;
     overflow-y: auto;
@@ -256,7 +256,7 @@
     cursor: pointer;
     padding: 4px 8px;
   }
-
+ 
   /* Floating action bar */
   .fab-bar {
     position: absolute;
@@ -296,13 +296,12 @@
     line-height: 1;
   }
   .d20-btn span { font-size: 9px; opacity: 0.85; margin-top: 2px; }
-
+ 
   /* ---------- Dice calculator ---------- */
-  .calc-screen {
-    flex-direction: row;
+  .calc-screen.active {
     display: flex;
+    flex-direction: row;
   }
-  .calc-screen.active { display: flex; }
   .calc-main {
     flex: 1;
     display: flex;
@@ -377,7 +376,7 @@
   .key.clear { color: var(--bad); }
   .key.back { color: var(--muted); }
   .key.history-toggle { color: var(--active); }
-
+ 
   /* History side panel */
   .history-panel {
     position: absolute;
@@ -450,7 +449,7 @@
     z-index: 4;
   }
   .scrim.show { opacity: 1; pointer-events: auto; }
-
+ 
   /* Modal */
   .modal {
     position: fixed;
@@ -497,7 +496,7 @@
   }
   .modal-btn.cancel { background: var(--panel-2); color: var(--text); }
   .modal-btn.ok { background: var(--accent); color: #0f0e17; }
-
+ 
   .cond-chips {
     display: flex;
     flex-wrap: wrap;
@@ -514,7 +513,7 @@
     cursor: pointer;
   }
   .cond-chip:active { background: var(--accent-2); }
-
+ 
   .empty {
     text-align: center;
     color: var(--muted);
@@ -529,7 +528,7 @@
     <button class="tab active" data-screen="initiative">Initiative</button>
     <button class="tab" data-screen="calculator">Dice</button>
   </div>
-
+ 
   <div class="screen-wrap">
     <!-- Initiative screen -->
     <div class="screen active" id="screen-initiative">
@@ -550,7 +549,7 @@
         <button class="fab next" id="next-btn">Next ›</button>
       </div>
     </div>
-
+ 
     <!-- Calculator screen -->
     <div class="screen calc-screen" id="screen-calculator">
       <div class="calc-main" id="calc-main">
@@ -564,32 +563,32 @@
           <button class="key die" data-action="die" data-val="6">d6</button>
           <button class="key die" data-action="die" data-val="8">d8</button>
           <button class="key die" data-action="die" data-val="10">d10</button>
-
+ 
           <button class="key die" data-action="die" data-val="12">d12</button>
           <button class="key die" data-action="die" data-val="20">d20</button>
           <button class="key kh" data-action="kh">KH</button>
           <button class="key op" data-action="paren">( )</button>
-
+ 
           <button class="key" data-action="num" data-val="7">7</button>
           <button class="key" data-action="num" data-val="8">8</button>
           <button class="key" data-action="num" data-val="9">9</button>
           <button class="key op" data-action="op" data-val="+">+</button>
-
+ 
           <button class="key" data-action="num" data-val="4">4</button>
           <button class="key" data-action="num" data-val="5">5</button>
           <button class="key" data-action="num" data-val="6">6</button>
           <button class="key op" data-action="op" data-val="-">−</button>
-
+ 
           <button class="key" data-action="num" data-val="1">1</button>
           <button class="key" data-action="num" data-val="2">2</button>
           <button class="key" data-action="num" data-val="3">3</button>
           <button class="key op" data-action="op" data-val="*">×</button>
-
+ 
           <button class="key" data-action="num" data-val="0">0</button>
           <button class="key back" data-action="back">⌫</button>
           <button class="key clear" data-action="clear">C</button>
           <button class="key op" data-action="op" data-val="/">÷</button>
-
+ 
           <button class="key history-toggle" data-action="history">History</button>
           <button class="key equals" data-action="equals">= Roll</button>
         </div>
@@ -607,7 +606,7 @@
     </div>
   </div>
 </div>
-
+ 
 <!-- Generic modal -->
 <div class="modal" id="modal">
   <div class="modal-card">
@@ -619,7 +618,7 @@
     </div>
   </div>
 </div>
-
+ 
 <script>
 /* =======================================================
    STATE
@@ -631,7 +630,7 @@ const state = {
   activeIdx: -1,
   history: [],     // {expr, result, breakdown, ts}
 };
-
+ 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -644,7 +643,7 @@ function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e) { console.warn('save failed', e); }
 }
-
+ 
 /* =======================================================
    NAV
    ======================================================= */
@@ -657,7 +656,7 @@ document.querySelectorAll('.tab').forEach(t => {
     });
   });
 });
-
+ 
 /* =======================================================
    INITIATIVE TRACKER
    ======================================================= */
@@ -666,15 +665,15 @@ const initEmpty = document.getElementById('init-empty');
 const roundNumEl = document.getElementById('round-num');
 const turnNumEl = document.getElementById('turn-num');
 const totalNumEl = document.getElementById('total-num');
-
+ 
 const COMMON_CONDITIONS = [
   'Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated',
   'Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained',
   'Stunned','Unconscious','Concentrating','Bless','Hex','Rage'
 ];
-
+ 
 function uid() { return Math.random().toString(36).slice(2, 9); }
-
+ 
 function renderInit() {
   initList.querySelectorAll('.creature').forEach(n => n.remove());
   if (state.creatures.length === 0) {
@@ -690,13 +689,13 @@ function renderInit() {
   turnNumEl.textContent = state.activeIdx >= 0 ? (state.activeIdx + 1) : '-';
   saveState();
 }
-
+ 
 function renderCreature(c, idx) {
   const el = document.createElement('div');
   el.className = 'creature' + (idx === state.activeIdx ? ' active' : '');
   el.dataset.id = c.id;
   el.dataset.idx = idx;
-
+ 
   el.innerHTML = `
     <div class="crow-top">
       <div class="drag-handle">⋮⋮</div>
@@ -724,13 +723,13 @@ function renderCreature(c, idx) {
     </div>
     <div class="conditions"></div>
   `;
-
+ 
   // Name edit
   el.querySelector('.cname').addEventListener('change', (e) => {
     c.name = e.target.value.trim() || 'Creature';
     saveState();
   });
-
+ 
   // Stat edits
   el.querySelectorAll('input[data-field]').forEach(inp => {
     inp.addEventListener('change', (e) => {
@@ -746,7 +745,7 @@ function renderCreature(c, idx) {
     });
     inp.addEventListener('focus', e => e.target.select());
   });
-
+ 
   // HP buttons
   el.querySelector('.hp-btn.dmg').addEventListener('click', () => {
     promptNumber('Damage amount', (v) => {
@@ -760,7 +759,7 @@ function renderCreature(c, idx) {
       renderInit();
     });
   });
-
+ 
   // Delete
   el.querySelector('.del-btn').addEventListener('click', () => {
     if (state.activeIdx > idx) state.activeIdx--;
@@ -768,17 +767,17 @@ function renderCreature(c, idx) {
     state.creatures.splice(idx, 1);
     renderInit();
   });
-
+ 
   // Conditions
   const condBox = el.querySelector('.conditions');
   renderConditions(c, condBox);
-
+ 
   // Drag handle
   attachDrag(el, el.querySelector('.drag-handle'));
-
+ 
   return el;
 }
-
+ 
 function renderConditions(c, box) {
   box.innerHTML = '';
   c.conditions.forEach((cond, i) => {
@@ -806,7 +805,7 @@ function renderConditions(c, box) {
   });
   box.appendChild(add);
 }
-
+ 
 /* ---------- Drag and drop reordering (touch + mouse) ---------- */
 function attachDrag(card, handle) {
   let dragging = false;
@@ -814,7 +813,7 @@ function attachDrag(card, handle) {
   let curY = 0;
   let placeholder = null;
   let offset = 0;
-
+ 
   function start(clientY) {
     dragging = true;
     startY = clientY;
@@ -831,7 +830,7 @@ function attachDrag(card, handle) {
     card.style.zIndex = '100';
     card.classList.add('dragging');
   }
-
+ 
   function move(clientY) {
     if (!dragging) return;
     curY = clientY;
@@ -853,7 +852,7 @@ function attachDrag(card, handle) {
       last.parentNode.insertBefore(placeholder, last.nextSibling);
     }
   }
-
+ 
   function end() {
     if (!dragging) return;
     dragging = false;
@@ -875,7 +874,7 @@ function attachDrag(card, handle) {
     }
     renderInit();
   }
-
+ 
   handle.addEventListener('touchstart', (e) => {
     e.preventDefault();
     start(e.touches[0].clientY);
@@ -900,7 +899,7 @@ function attachDrag(card, handle) {
   }, { passive: false });
   document.addEventListener('touchend', () => { if (dragging) end(); });
 }
-
+ 
 /* ---------- Combat buttons ---------- */
 document.getElementById('next-btn').addEventListener('click', () => {
   if (state.creatures.length === 0) return;
@@ -947,7 +946,7 @@ document.getElementById('d20-btn').addEventListener('click', () => {
   const roll = 1 + Math.floor(Math.random() * 20);
   openAddCreatureModal(roll);
 });
-
+ 
 /* =======================================================
    MODALS
    ======================================================= */
@@ -956,7 +955,7 @@ const modalTitle = document.getElementById('modal-title');
 const modalBody = document.getElementById('modal-body');
 const modalOk = document.getElementById('modal-ok');
 const modalCancel = document.getElementById('modal-cancel');
-
+ 
 function closeModal() {
   modal.classList.remove('show');
   modalBody.innerHTML = '';
@@ -965,7 +964,7 @@ function closeModal() {
 }
 modalCancel.addEventListener('click', closeModal);
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-
+ 
 function openAddCreatureModal(prefillInit) {
   modalTitle.textContent = 'Add creature';
   modalBody.innerHTML = `
@@ -978,7 +977,7 @@ function openAddCreatureModal(prefillInit) {
   `;
   modal.classList.add('show');
   setTimeout(() => document.getElementById('m-name').focus(), 50);
-
+ 
   modalOk.onclick = () => {
     const name = document.getElementById('m-name').value.trim() || 'Creature';
     const init = parseInt(document.getElementById('m-init').value, 10) || 0;
@@ -999,7 +998,7 @@ function openAddCreatureModal(prefillInit) {
     closeModal();
   };
 }
-
+ 
 function promptNumber(title, cb) {
   modalTitle.textContent = title;
   modalBody.innerHTML = `<input class="modal-input" id="m-num" inputmode="numeric" placeholder="0" />`;
@@ -1011,7 +1010,7 @@ function promptNumber(title, cb) {
     closeModal();
   };
 }
-
+ 
 function openConditionPicker(cb) {
   modalTitle.textContent = 'Add condition';
   modalBody.innerHTML = `
@@ -1033,14 +1032,14 @@ function openConditionPicker(cb) {
     closeModal();
   };
 }
-
+ 
 function confirmModal(text, cb) {
   modalTitle.textContent = 'Confirm';
   modalBody.innerHTML = `<div style="color:var(--muted); margin-bottom:6px;">${escapeHtml(text)}</div>`;
   modal.classList.add('show');
   modalOk.onclick = () => { cb(); closeModal(); };
 }
-
+ 
 /* =======================================================
    DICE CALCULATOR
    ======================================================= */
@@ -1050,9 +1049,9 @@ const breakdownEl = document.getElementById('breakdown');
 const historyList = document.getElementById('history-list');
 const historyPanel = document.getElementById('history-panel');
 const scrim = document.getElementById('scrim');
-
+ 
 let expr = '';   // raw expression string, e.g. "2d20kh1+5"
-
+ 
 function renderExpr() {
   if (!expr) {
     exprEl.innerHTML = '<span class="placeholder">Tap dice or numbers…</span>';
@@ -1065,12 +1064,12 @@ function renderExpr() {
     exprEl.textContent = display;
   }
 }
-
+ 
 function appendExpr(s) {
   expr += s;
   renderExpr();
 }
-
+ 
 document.querySelectorAll('.key').forEach(k => {
   k.addEventListener('click', () => {
     const a = k.dataset.action;
@@ -1107,7 +1106,7 @@ document.querySelectorAll('.key').forEach(k => {
     }
   });
 });
-
+ 
 /* ---------- Dice expression evaluator ----------
    Grammar:
      expr   := term (('+'|'-') term)*
@@ -1140,7 +1139,7 @@ function rollExpression() {
     breakdownEl.textContent = e.message || 'invalid expression';
   }
 }
-
+ 
 // Tokenizer + Parser
 function parse(input) {
   let pos = 0;
@@ -1200,7 +1199,7 @@ function parse(input) {
   if (pos < input.length) throw new Error('unexpected char "' + input[pos] + '"');
   return result;
 }
-
+ 
 function evalAst(node, parts) {
   switch (node.type) {
     case 'num': return node.value;
@@ -1239,7 +1238,7 @@ function evalAst(node, parts) {
   }
   throw new Error('bad node');
 }
-
+ 
 /* ---------- History panel ---------- */
 function renderHistory() {
   historyList.innerHTML = '';
@@ -1281,7 +1280,7 @@ document.getElementById('clear-hist').addEventListener('click', () => {
   renderHistory();
   saveState();
 });
-
+ 
 /* ---------- Swipe to open history ---------- */
 const calcScreen = document.getElementById('screen-calculator');
 let touchStartX = null;
@@ -1300,7 +1299,7 @@ calcScreen.addEventListener('touchend', (e) => {
   }
   touchStartX = null;
 });
-
+ 
 /* =======================================================
    UTIL
    ======================================================= */
@@ -1311,7 +1310,7 @@ function escapeHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
+ 
 /* =======================================================
    BOOT
    ======================================================= */
