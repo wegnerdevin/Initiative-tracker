@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0f0e17" />
+<title>D&D Tools</title>
+<style>
+  :root {
+    --bg: #0f0e17;
+    --panel: #1a1925;
+    --panel-2: #232132;
+    --border: #2e2c40;
+    --text: #fffffe;
+    --muted: #a7a9be;
+    --accent: #ff8906;
+    --accent-2: #f25f4c;
+    --good: #2cb67d;
+    --bad: #e53170;
+    --active: #ffd803;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    width: 100vw;
+  }
+  /* Tabs */
+  .tabs {
+    display: flex;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding-top: env(safe-area-inset-top);
+  }
+  .tab {
+    flex: 1;
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+  .tab.active {
+    color: var(--accent);
+    box-shadow: inset 0 -3px 0 var(--accent);
+  }
+  .screen-wrap {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+  }
+  .screen.active { display: flex; }
+
+  /* ---------- Initiative tracker ---------- */
+  .init-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .round-box {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .round-box b {
+    color: var(--text);
+    font-size: 16px;
+  }
+  .icon-btn {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 48px;
+  }
+  .icon-btn:active { background: var(--border); }
+  .icon-btn.primary {
+    background: var(--accent);
+    color: #0f0e17;
+    border-color: var(--accent);
+  }
+  .icon-btn.danger {
+    background: transparent;
+    color: var(--bad);
+    border-color: var(--bad);
+  }
+
+  .init-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 8px 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .creature {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    touch-action: pan-y;
+  }
+  .creature.active {
+    border-color: var(--active);
+    box-shadow: 0 0 0 2px var(--active) inset;
+  }
+  .creature.dragging {
+    opacity: 0.85;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    transform: scale(1.02);
+    z-index: 10;
+  }
+  .creature.drag-over {
+    border-color: var(--accent);
+  }
+  .crow-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .drag-handle {
+    font-size: 22px;
+    color: var(--muted);
+    cursor: grab;
+    padding: 4px 6px;
+    touch-action: none;
+  }
+  .init-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 36px;
+    text-align: center;
+  }
+  .cname {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    outline: none;
+    min-width: 0;
+  }
+  .crow-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-left: 36px;
+  }
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 13px;
+  }
+  .stat label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  .stat input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    width: 38px;
+    font-size: 14px;
+    outline: none;
+    text-align: center;
+    font-weight: 600;
+  }
+  .stat .sep { color: var(--muted); }
+  .hp-btn {
+    background: var(--border);
+    border: none;
+    color: var(--text);
+    border-radius: 6px;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  .hp-btn.dmg { color: var(--bad); }
+  .hp-btn.heal { color: var(--good); }
+  .conditions {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding-left: 36px;
+  }
+  .cond {
+    background: var(--accent-2);
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .cond .x {
+    margin-left: 4px;
+    cursor: pointer;
+    opacity: 0.8;
+  }
+  .add-cond {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .del-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  /* Floating action bar */
+  .fab-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, var(--bg) 65%, transparent);
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .fab {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+  }
+  .fab.prev { background: var(--panel-2); color: var(--text); }
+  .fab.next { background: var(--accent); color: #0f0e17; }
+  .fab.add  { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  .d20-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    color: #fff;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(242, 95, 76, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    line-height: 1;
+  }
+  .d20-btn span { font-size: 9px; opacity: 0.85; margin-top: 2px; }
+
+  /* ---------- Dice calculator ---------- */
+  .calc-screen {
+    flex-direction: row;
+    display: flex;
+  }
+  .calc-screen.active { display: flex; }
+  .calc-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    transition: transform 0.3s ease;
+  }
+  .calc-display {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+  }
+  .expr {
+    font-size: 26px;
+    font-weight: 600;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-height: 36px;
+    color: var(--text);
+    text-align: right;
+    line-height: 1.3;
+  }
+  .expr .placeholder { color: var(--muted); }
+  .result {
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--accent);
+    text-align: right;
+    margin-top: 8px;
+    min-height: 56px;
+  }
+  .breakdown {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 6px;
+    min-height: 18px;
+    word-wrap: break-word;
+  }
+  .calc-keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+  }
+  .key {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 4px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: 56px;
+  }
+  .key:active { background: var(--border); transform: scale(0.97); }
+  .key.die { color: var(--accent); }
+  .key.op { color: var(--accent-2); }
+  .key.kh { color: var(--active); font-size: 16px; }
+  .key.equals {
+    background: var(--accent);
+    color: #0f0e17;
+    border-color: var(--accent);
+    grid-column: span 2;
+  }
+  .key.clear { color: var(--bad); }
+  .key.back { color: var(--muted); }
+  .key.history-toggle { color: var(--active); }
+
+  /* History side panel */
+  .history-panel {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 85%;
+    max-width: 360px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    z-index: 5;
+  }
+  .history-panel.open { transform: translateX(0); }
+  .history-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .history-head h3 { margin: 0; font-size: 16px; }
+  .history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .hist-item {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+  }
+  .hist-expr { font-size: 13px; color: var(--muted); word-break: break-all; }
+  .hist-result {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+  .hist-breakdown {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    word-break: break-all;
+  }
+  .hist-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: 14px;
+  }
+  .clear-hist {
+    background: transparent;
+    border: 1px solid var(--bad);
+    color: var(--bad);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 4;
+  }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-card {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 20px;
+    width: 100%;
+    max-width: 320px;
+    border: 1px solid var(--border);
+  }
+  .modal-card h3 { margin: 0 0 12px; font-size: 16px; }
+  .modal-input {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 12px;
+    outline: none;
+  }
+  .modal-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .modal-btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-btn.cancel { background: var(--panel-2); color: var(--text); }
+  .modal-btn.ok { background: var(--accent); color: #0f0e17; }
+
+  .cond-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .cond-chip {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .cond-chip:active { background: var(--accent-2); }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tabs">
+    <button class="tab active" data-screen="initiative">Initiative</button>
+    <button class="tab" data-screen="calculator">Dice</button>
+  </div>
+
+  <div class="screen-wrap">
+    <!-- Initiative screen -->
+    <div class="screen active" id="screen-initiative">
+      <div class="init-header">
+        <button class="icon-btn danger" id="reset-btn" title="Reset combat">Reset</button>
+        <div class="round-box">
+          Round <b id="round-num">1</b> · Turn <b id="turn-num">-</b>/<b id="total-num">0</b>
+        </div>
+        <button class="icon-btn" id="sort-btn" title="Sort by initiative">Sort</button>
+      </div>
+      <div class="init-list" id="init-list">
+        <div class="empty" id="init-empty">No creatures yet. Tap <b>+ Add</b> or the <b>d20</b> to roll one in.</div>
+      </div>
+      <div class="fab-bar">
+        <button class="fab prev" id="prev-btn">‹ Prev</button>
+        <button class="fab add" id="add-btn">+ Add</button>
+        <button class="d20-btn" id="d20-btn">d20<span>quick</span></button>
+        <button class="fab next" id="next-btn">Next ›</button>
+      </div>
+    </div>
+
+    <!-- Calculator screen -->
+    <div class="screen calc-screen" id="screen-calculator">
+      <div class="calc-main" id="calc-main">
+        <div class="calc-display">
+          <div class="expr" id="expr"><span class="placeholder">Tap dice or numbers…</span></div>
+          <div class="result" id="result">0</div>
+          <div class="breakdown" id="breakdown"></div>
+        </div>
+        <div class="calc-keys">
+          <button class="key die" data-action="die" data-val="4">d4</button>
+          <button class="key die" data-action="die" data-val="6">d6</button>
+          <button class="key die" data-action="die" data-val="8">d8</button>
+          <button class="key die" data-action="die" data-val="10">d10</button>
+
+          <button class="key die" data-action="die" data-val="12">d12</button>
+          <button class="key die" data-action="die" data-val="20">d20</button>
+          <button class="key kh" data-action="kh">KH</button>
+          <button class="key op" data-action="paren">( )</button>
+
+          <button class="key" data-action="num" data-val="7">7</button>
+          <button class="key" data-action="num" data-val="8">8</button>
+          <button class="key" data-action="num" data-val="9">9</button>
+          <button class="key op" data-action="op" data-val="+">+</button>
+
+          <button class="key" data-action="num" data-val="4">4</button>
+          <button class="key" data-action="num" data-val="5">5</button>
+          <button class="key" data-action="num" data-val="6">6</button>
+          <button class="key op" data-action="op" data-val="-">−</button>
+
+          <button class="key" data-action="num" data-val="1">1</button>
+          <button class="key" data-action="num" data-val="2">2</button>
+          <button class="key" data-action="num" data-val="3">3</button>
+          <button class="key op" data-action="op" data-val="*">×</button>
+
+          <button class="key" data-action="num" data-val="0">0</button>
+          <button class="key back" data-action="back">⌫</button>
+          <button class="key clear" data-action="clear">C</button>
+          <button class="key op" data-action="op" data-val="/">÷</button>
+
+          <button class="key history-toggle" data-action="history">History</button>
+          <button class="key equals" data-action="equals">= Roll</button>
+        </div>
+      </div>
+      <div class="scrim" id="scrim"></div>
+      <div class="history-panel" id="history-panel">
+        <div class="history-head">
+          <h3>Roll History</h3>
+          <button class="clear-hist" id="clear-hist">Clear</button>
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="hist-empty">No rolls yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generic modal -->
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <h3 id="modal-title">Add creature</h3>
+    <div id="modal-body"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn cancel" id="modal-cancel">Cancel</button>
+      <button class="modal-btn ok" id="modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================
+   STATE
+   ======================================================= */
+const STORAGE_KEY = 'dnd-tools-v1';
+const state = {
+  creatures: [],   // {id, name, init, hp, maxHp, ac, conditions:[], active}
+  round: 1,
+  activeIdx: -1,
+  history: [],     // {expr, result, breakdown, ts}
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    Object.assign(state, s);
+  } catch(e) { console.warn('load failed', e); }
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e) { console.warn('save failed', e); }
+}
+
+/* =======================================================
+   NAV
+   ======================================================= */
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    const target = t.dataset.screen;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.toggle('active', s.id === 'screen-' + target);
+    });
+  });
+});
+
+/* =======================================================
+   INITIATIVE TRACKER
+   ======================================================= */
+const initList = document.getElementById('init-list');
+const initEmpty = document.getElementById('init-empty');
+const roundNumEl = document.getElementById('round-num');
+const turnNumEl = document.getElementById('turn-num');
+const totalNumEl = document.getElementById('total-num');
+
+const COMMON_CONDITIONS = [
+  'Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated',
+  'Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained',
+  'Stunned','Unconscious','Concentrating','Bless','Hex','Rage'
+];
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function renderInit() {
+  initList.querySelectorAll('.creature').forEach(n => n.remove());
+  if (state.creatures.length === 0) {
+    initEmpty.style.display = 'block';
+  } else {
+    initEmpty.style.display = 'none';
+    state.creatures.forEach((c, i) => {
+      initList.appendChild(renderCreature(c, i));
+    });
+  }
+  roundNumEl.textContent = state.round;
+  totalNumEl.textContent = state.creatures.length;
+  turnNumEl.textContent = state.activeIdx >= 0 ? (state.activeIdx + 1) : '-';
+  saveState();
+}
+
+function renderCreature(c, idx) {
+  const el = document.createElement('div');
+  el.className = 'creature' + (idx === state.activeIdx ? ' active' : '');
+  el.dataset.id = c.id;
+  el.dataset.idx = idx;
+
+  el.innerHTML = `
+    <div class="crow-top">
+      <div class="drag-handle">⋮⋮</div>
+      <div class="init-num">${c.init}</div>
+      <input class="cname" value="${escapeHtml(c.name)}" placeholder="Creature" />
+      <button class="del-btn" title="Remove">✕</button>
+    </div>
+    <div class="crow-stats">
+      <div class="stat">
+        <label>HP</label>
+        <button class="hp-btn dmg" data-act="dmg">−</button>
+        <input data-field="hp" type="text" inputmode="numeric" value="${c.hp}" />
+        <span class="sep">/</span>
+        <input data-field="maxHp" type="text" inputmode="numeric" value="${c.maxHp}" />
+        <button class="hp-btn heal" data-act="heal">+</button>
+      </div>
+      <div class="stat">
+        <label>AC</label>
+        <input data-field="ac" type="text" inputmode="numeric" value="${c.ac}" />
+      </div>
+      <div class="stat">
+        <label>Init</label>
+        <input data-field="init" type="text" inputmode="numeric" value="${c.init}" />
+      </div>
+    </div>
+    <div class="conditions"></div>
+  `;
+
+  // Name edit
+  el.querySelector('.cname').addEventListener('change', (e) => {
+    c.name = e.target.value.trim() || 'Creature';
+    saveState();
+  });
+
+  // Stat edits
+  el.querySelectorAll('input[data-field]').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const f = inp.dataset.field;
+      const v = parseInt(e.target.value, 10);
+      if (!isNaN(v)) {
+        c[f] = v;
+        if (f === 'init') { renderInit(); }
+        else { saveState(); }
+      } else {
+        e.target.value = c[f];
+      }
+    });
+    inp.addEventListener('focus', e => e.target.select());
+  });
+
+  // HP buttons
+  el.querySelector('.hp-btn.dmg').addEventListener('click', () => {
+    promptNumber('Damage amount', (v) => {
+      c.hp = Math.max(0, c.hp - v);
+      renderInit();
+    });
+  });
+  el.querySelector('.hp-btn.heal').addEventListener('click', () => {
+    promptNumber('Healing amount', (v) => {
+      c.hp = Math.min(c.maxHp || 999, c.hp + v);
+      renderInit();
+    });
+  });
+
+  // Delete
+  el.querySelector('.del-btn').addEventListener('click', () => {
+    if (state.activeIdx > idx) state.activeIdx--;
+    else if (state.activeIdx === idx) state.activeIdx = -1;
+    state.creatures.splice(idx, 1);
+    renderInit();
+  });
+
+  // Conditions
+  const condBox = el.querySelector('.conditions');
+  renderConditions(c, condBox);
+
+  // Drag handle
+  attachDrag(el, el.querySelector('.drag-handle'));
+
+  return el;
+}
+
+function renderConditions(c, box) {
+  box.innerHTML = '';
+  c.conditions.forEach((cond, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'cond';
+    chip.innerHTML = `${escapeHtml(cond)}<span class="x">×</span>`;
+    chip.querySelector('.x').addEventListener('click', () => {
+      c.conditions.splice(i, 1);
+      renderConditions(c, box);
+      saveState();
+    });
+    box.appendChild(chip);
+  });
+  const add = document.createElement('button');
+  add.className = 'add-cond';
+  add.textContent = '+ Condition';
+  add.addEventListener('click', () => {
+    openConditionPicker((picked) => {
+      if (picked && !c.conditions.includes(picked)) {
+        c.conditions.push(picked);
+        renderConditions(c, box);
+        saveState();
+      }
+    });
+  });
+  box.appendChild(add);
+}
+
+/* ---------- Drag and drop reordering (touch + mouse) ---------- */
+function attachDrag(card, handle) {
+  let dragging = false;
+  let startY = 0;
+  let curY = 0;
+  let placeholder = null;
+  let offset = 0;
+
+  function start(clientY) {
+    dragging = true;
+    startY = clientY;
+    const rect = card.getBoundingClientRect();
+    offset = clientY - rect.top;
+    placeholder = document.createElement('div');
+    placeholder.style.height = rect.height + 'px';
+    placeholder.style.marginBottom = '8px';
+    card.parentNode.insertBefore(placeholder, card);
+    card.style.position = 'fixed';
+    card.style.left = rect.left + 'px';
+    card.style.top = rect.top + 'px';
+    card.style.width = rect.width + 'px';
+    card.style.zIndex = '100';
+    card.classList.add('dragging');
+  }
+
+  function move(clientY) {
+    if (!dragging) return;
+    curY = clientY;
+    card.style.top = (clientY - offset) + 'px';
+    // Find which sibling we're hovering over
+    const siblings = [...initList.querySelectorAll('.creature')].filter(s => s !== card);
+    let inserted = false;
+    for (const sib of siblings) {
+      const r = sib.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      if (clientY < mid) {
+        sib.parentNode.insertBefore(placeholder, sib);
+        inserted = true;
+        break;
+      }
+    }
+    if (!inserted && siblings.length) {
+      const last = siblings[siblings.length - 1];
+      last.parentNode.insertBefore(placeholder, last.nextSibling);
+    }
+  }
+
+  function end() {
+    if (!dragging) return;
+    dragging = false;
+    // Drop card back into placeholder position
+    placeholder.parentNode.insertBefore(card, placeholder);
+    placeholder.remove();
+    card.style.position = '';
+    card.style.left = '';
+    card.style.top = '';
+    card.style.width = '';
+    card.style.zIndex = '';
+    card.classList.remove('dragging');
+    // Recompute order from DOM
+    const newOrder = [...initList.querySelectorAll('.creature')].map(el => el.dataset.id);
+    const activeId = state.activeIdx >= 0 ? state.creatures[state.activeIdx]?.id : null;
+    state.creatures.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+    if (activeId) {
+      state.activeIdx = state.creatures.findIndex(c => c.id === activeId);
+    }
+    renderInit();
+  }
+
+  handle.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    start(e.touches[0].clientY);
+  }, { passive: false });
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    start(e.clientY);
+    const mm = (ev) => move(ev.clientY);
+    const mu = () => {
+      end();
+      document.removeEventListener('mousemove', mm);
+      document.removeEventListener('mouseup', mu);
+    };
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('mouseup', mu);
+  });
+  document.addEventListener('touchmove', (e) => {
+    if (dragging) {
+      e.preventDefault();
+      move(e.touches[0].clientY);
+    }
+  }, { passive: false });
+  document.addEventListener('touchend', () => { if (dragging) end(); });
+}
+
+/* ---------- Combat buttons ---------- */
+document.getElementById('next-btn').addEventListener('click', () => {
+  if (state.creatures.length === 0) return;
+  if (state.activeIdx === -1) {
+    state.activeIdx = 0;
+  } else {
+    state.activeIdx++;
+    if (state.activeIdx >= state.creatures.length) {
+      state.activeIdx = 0;
+      state.round++;
+    }
+  }
+  renderInit();
+});
+document.getElementById('prev-btn').addEventListener('click', () => {
+  if (state.creatures.length === 0) return;
+  if (state.activeIdx <= 0) {
+    state.activeIdx = state.creatures.length - 1;
+    if (state.round > 1) state.round--;
+  } else {
+    state.activeIdx--;
+  }
+  renderInit();
+});
+document.getElementById('sort-btn').addEventListener('click', () => {
+  const activeId = state.activeIdx >= 0 ? state.creatures[state.activeIdx]?.id : null;
+  state.creatures.sort((a, b) => b.init - a.init);
+  if (activeId) state.activeIdx = state.creatures.findIndex(c => c.id === activeId);
+  renderInit();
+});
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (state.creatures.length === 0) return;
+  confirmModal('Reset combat? This clears all creatures, round, and turn.', () => {
+    state.creatures = [];
+    state.round = 1;
+    state.activeIdx = -1;
+    renderInit();
+  });
+});
+document.getElementById('add-btn').addEventListener('click', () => {
+  openAddCreatureModal();
+});
+document.getElementById('d20-btn').addEventListener('click', () => {
+  const roll = 1 + Math.floor(Math.random() * 20);
+  openAddCreatureModal(roll);
+});
+
+/* =======================================================
+   MODALS
+   ======================================================= */
+const modal = document.getElementById('modal');
+const modalTitle = document.getElementById('modal-title');
+const modalBody = document.getElementById('modal-body');
+const modalOk = document.getElementById('modal-ok');
+const modalCancel = document.getElementById('modal-cancel');
+
+function closeModal() {
+  modal.classList.remove('show');
+  modalBody.innerHTML = '';
+  modalOk.onclick = null;
+  modalCancel.onclick = null;
+}
+modalCancel.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+function openAddCreatureModal(prefillInit) {
+  modalTitle.textContent = 'Add creature';
+  modalBody.innerHTML = `
+    <input class="modal-input" id="m-name" placeholder="Name" autofocus />
+    <div style="display:flex;gap:8px;">
+      <input class="modal-input" id="m-init" inputmode="numeric" placeholder="Init" value="${prefillInit ?? ''}" />
+      <input class="modal-input" id="m-hp" inputmode="numeric" placeholder="HP" />
+      <input class="modal-input" id="m-ac" inputmode="numeric" placeholder="AC" />
+    </div>
+  `;
+  modal.classList.add('show');
+  setTimeout(() => document.getElementById('m-name').focus(), 50);
+
+  modalOk.onclick = () => {
+    const name = document.getElementById('m-name').value.trim() || 'Creature';
+    const init = parseInt(document.getElementById('m-init').value, 10) || 0;
+    const hp = parseInt(document.getElementById('m-hp').value, 10) || 0;
+    const ac = parseInt(document.getElementById('m-ac').value, 10) || 10;
+    state.creatures.push({
+      id: uid(),
+      name, init,
+      hp, maxHp: hp,
+      ac,
+      conditions: []
+    });
+    // Auto-sort descending by init
+    const activeId = state.activeIdx >= 0 ? state.creatures[state.activeIdx]?.id : null;
+    state.creatures.sort((a, b) => b.init - a.init);
+    if (activeId) state.activeIdx = state.creatures.findIndex(c => c.id === activeId);
+    renderInit();
+    closeModal();
+  };
+}
+
+function promptNumber(title, cb) {
+  modalTitle.textContent = title;
+  modalBody.innerHTML = `<input class="modal-input" id="m-num" inputmode="numeric" placeholder="0" />`;
+  modal.classList.add('show');
+  setTimeout(() => document.getElementById('m-num').focus(), 50);
+  modalOk.onclick = () => {
+    const v = parseInt(document.getElementById('m-num').value, 10);
+    if (!isNaN(v) && v > 0) cb(v);
+    closeModal();
+  };
+}
+
+function openConditionPicker(cb) {
+  modalTitle.textContent = 'Add condition';
+  modalBody.innerHTML = `
+    <div class="cond-chips" id="cond-chips"></div>
+    <input class="modal-input" id="m-cond" placeholder="Custom…" />
+  `;
+  const chipsBox = modalBody.querySelector('#cond-chips');
+  COMMON_CONDITIONS.forEach(name => {
+    const ch = document.createElement('button');
+    ch.className = 'cond-chip';
+    ch.textContent = name;
+    ch.addEventListener('click', () => { cb(name); closeModal(); });
+    chipsBox.appendChild(ch);
+  });
+  modal.classList.add('show');
+  modalOk.onclick = () => {
+    const v = document.getElementById('m-cond').value.trim();
+    if (v) cb(v);
+    closeModal();
+  };
+}
+
+function confirmModal(text, cb) {
+  modalTitle.textContent = 'Confirm';
+  modalBody.innerHTML = `<div style="color:var(--muted); margin-bottom:6px;">${escapeHtml(text)}</div>`;
+  modal.classList.add('show');
+  modalOk.onclick = () => { cb(); closeModal(); };
+}
+
+/* =======================================================
+   DICE CALCULATOR
+   ======================================================= */
+const exprEl = document.getElementById('expr');
+const resultEl = document.getElementById('result');
+const breakdownEl = document.getElementById('breakdown');
+const historyList = document.getElementById('history-list');
+const historyPanel = document.getElementById('history-panel');
+const scrim = document.getElementById('scrim');
+
+let expr = '';   // raw expression string, e.g. "2d20kh1+5"
+
+function renderExpr() {
+  if (!expr) {
+    exprEl.innerHTML = '<span class="placeholder">Tap dice or numbers…</span>';
+  } else {
+    // Display with prettier operators
+    let display = expr
+      .replace(/\*/g, '×')
+      .replace(/\//g, '÷')
+      .replace(/kh/gi, ' KH ');
+    exprEl.textContent = display;
+  }
+}
+
+function appendExpr(s) {
+  expr += s;
+  renderExpr();
+}
+
+document.querySelectorAll('.key').forEach(k => {
+  k.addEventListener('click', () => {
+    const a = k.dataset.action;
+    const v = k.dataset.val;
+    switch (a) {
+      case 'num': appendExpr(v); break;
+      case 'op':  appendExpr(v); break;
+      case 'die': {
+        // If last char is a digit, treat as count; otherwise assume 1
+        const last = expr.slice(-1);
+        if (/\d/.test(last)) appendExpr('d' + v);
+        else appendExpr('1d' + v);
+        break;
+      }
+      case 'kh': appendExpr('kh'); break;
+      case 'paren': {
+        // Smart parens: open if balanced or last is op/empty/(, else close
+        const opens = (expr.match(/\(/g) || []).length;
+        const closes = (expr.match(/\)/g) || []).length;
+        const last = expr.slice(-1);
+        if (opens > closes && (/[\d)]/.test(last))) appendExpr(')');
+        else appendExpr('(');
+        break;
+      }
+      case 'back': {
+        if (expr.endsWith('kh')) expr = expr.slice(0, -2);
+        else expr = expr.slice(0, -1);
+        renderExpr();
+        break;
+      }
+      case 'clear': expr = ''; resultEl.textContent = '0'; breakdownEl.textContent = ''; renderExpr(); break;
+      case 'equals': rollExpression(); break;
+      case 'history': toggleHistory(); break;
+    }
+  });
+});
+
+/* ---------- Dice expression evaluator ----------
+   Grammar:
+     expr   := term (('+'|'-') term)*
+     term   := factor (('*'|'/') factor)*
+     factor := '(' expr ')' | dice | number
+     dice   := number 'd' number ( 'kh' number )?
+   Numbers must be positive integers (sign handled by + / -).
+*/
+function rollExpression() {
+  if (!expr.trim()) return;
+  try {
+    const parts = []; // breakdown components
+    const ast = parse(expr.toLowerCase());
+    const value = evalAst(ast, parts);
+    const rounded = Math.round(value * 100) / 100;
+    resultEl.textContent = rounded;
+    const breakdownText = parts.join('  ');
+    breakdownEl.textContent = breakdownText;
+    state.history.unshift({
+      expr: expr,
+      result: rounded,
+      breakdown: breakdownText,
+      ts: Date.now(),
+    });
+    if (state.history.length > 100) state.history.length = 100;
+    renderHistory();
+    saveState();
+  } catch (e) {
+    resultEl.textContent = 'err';
+    breakdownEl.textContent = e.message || 'invalid expression';
+  }
+}
+
+// Tokenizer + Parser
+function parse(input) {
+  let pos = 0;
+  function peek() { return input[pos]; }
+  function eat(c) {
+    if (input[pos] === c) { pos++; return true; }
+    return false;
+  }
+  function readNumber() {
+    let s = '';
+    while (pos < input.length && /\d/.test(input[pos])) { s += input[pos++]; }
+    if (!s) throw new Error('expected number');
+    return parseInt(s, 10);
+  }
+  function parseFactor() {
+    if (eat('(')) {
+      const e = parseExpr();
+      if (!eat(')')) throw new Error('missing )');
+      return e;
+    }
+    if (eat('-')) {
+      return { type: 'neg', a: parseFactor() };
+    }
+    if (!/\d/.test(peek())) throw new Error('expected number at pos ' + pos);
+    const n = readNumber();
+    if (peek() === 'd') {
+      pos++; // consume d
+      const sides = readNumber();
+      let kh = null;
+      if (input.substr(pos, 2) === 'kh') {
+        pos += 2;
+        kh = readNumber();
+      }
+      return { type: 'dice', count: n, sides, kh };
+    }
+    return { type: 'num', value: n };
+  }
+  function parseTerm() {
+    let left = parseFactor();
+    while (peek() === '*' || peek() === '/') {
+      const op = input[pos++];
+      const right = parseFactor();
+      left = { type: 'binop', op, left, right };
+    }
+    return left;
+  }
+  function parseExpr() {
+    let left = parseTerm();
+    while (peek() === '+' || peek() === '-') {
+      const op = input[pos++];
+      const right = parseTerm();
+      left = { type: 'binop', op, left, right };
+    }
+    return left;
+  }
+  const result = parseExpr();
+  if (pos < input.length) throw new Error('unexpected char "' + input[pos] + '"');
+  return result;
+}
+
+function evalAst(node, parts) {
+  switch (node.type) {
+    case 'num': return node.value;
+    case 'neg': return -evalAst(node.a, parts);
+    case 'dice': {
+      const rolls = [];
+      for (let i = 0; i < node.count; i++) {
+        rolls.push(1 + Math.floor(Math.random() * node.sides));
+      }
+      let kept = rolls;
+      let dropped = [];
+      if (node.kh != null) {
+        const sorted = [...rolls].map((v, i) => ({v, i})).sort((a,b) => b.v - a.v);
+        const keepIdx = new Set(sorted.slice(0, node.kh).map(x => x.i));
+        kept = rolls.filter((_, i) => keepIdx.has(i));
+        dropped = rolls.filter((_, i) => !keepIdx.has(i));
+      }
+      const sum = kept.reduce((a,b)=>a+b, 0);
+      const label = `${node.count}d${node.sides}${node.kh != null ? `kh${node.kh}` : ''}`;
+      const detail = dropped.length
+        ? `[${kept.join(',')} | ~~${dropped.join(',')}~~]`
+        : `[${rolls.join(',')}]`;
+      parts.push(`${label}=${sum}${detail}`);
+      return sum;
+    }
+    case 'binop': {
+      const l = evalAst(node.left, parts);
+      const r = evalAst(node.right, parts);
+      switch (node.op) {
+        case '+': return l + r;
+        case '-': return l - r;
+        case '*': return l * r;
+        case '/': return r === 0 ? 0 : l / r;
+      }
+    }
+  }
+  throw new Error('bad node');
+}
+
+/* ---------- History panel ---------- */
+function renderHistory() {
+  historyList.innerHTML = '';
+  if (state.history.length === 0) {
+    historyList.innerHTML = '<div class="hist-empty">No rolls yet.</div>';
+    return;
+  }
+  state.history.forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'hist-item';
+    el.innerHTML = `
+      <div class="hist-expr">${escapeHtml(h.expr)}</div>
+      <div class="hist-result">${h.result}</div>
+      <div class="hist-breakdown">${escapeHtml(h.breakdown)}</div>
+    `;
+    el.addEventListener('click', () => {
+      expr = h.expr;
+      renderExpr();
+      closeHistory();
+    });
+    historyList.appendChild(el);
+  });
+}
+function toggleHistory() {
+  if (historyPanel.classList.contains('open')) closeHistory();
+  else openHistory();
+}
+function openHistory() {
+  historyPanel.classList.add('open');
+  scrim.classList.add('show');
+}
+function closeHistory() {
+  historyPanel.classList.remove('open');
+  scrim.classList.remove('show');
+}
+scrim.addEventListener('click', closeHistory);
+document.getElementById('clear-hist').addEventListener('click', () => {
+  state.history = [];
+  renderHistory();
+  saveState();
+});
+
+/* ---------- Swipe to open history ---------- */
+const calcScreen = document.getElementById('screen-calculator');
+let touchStartX = null;
+let touchStartY = null;
+calcScreen.addEventListener('touchstart', (e) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+calcScreen.addEventListener('touchend', (e) => {
+  if (touchStartX == null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (dx < 0 && !historyPanel.classList.contains('open')) openHistory();
+    else if (dx > 0 && historyPanel.classList.contains('open')) closeHistory();
+  }
+  touchStartX = null;
+});
+
+/* =======================================================
+   UTIL
+   ======================================================= */
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* =======================================================
+   BOOT
+   ======================================================= */
+loadState();
+renderInit();
+renderHistory();
+renderExpr();
+</script>
+</body>
+</html>
